@@ -1,0 +1,346 @@
+= Übung-Android Cao Anton
+Cao Anton
+1.0.0
+:icons: font
+:experimental:
+:toc:
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+== Aufgabe 1: Basisprojekt erstellen
+
+* Es wird ein neues Android-Projekt erstellt und das Tutorial vom Herr Professor Stütz (https://htl-leonding-college.github.io/android-reactive-java-todo/[Android-Tutorial]) gemacht
+
+=== Projekt erstellen
+
+* Neues Projekt mithilfe von Android Studio erstellen
+
+=== Dependencies hinzufügen und konfigurieren
+
+.build.gradle.kts
+[%collapsible]
+====
+
+[source, kts]
+----
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.kotlinAndroidKsp)
+    alias(libs.plugins.hiltAndroid)
+}
+
+android {
+    namespace = "at.htl.todo"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "at.htl.todo"
+        minSdk = 30
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+    buildFeatures {
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.13"
+    }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/INDEX.LIST"
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE.md"
+            excludes += "/META-INF/NOTICE.md"
+        }
+    }
+}
+
+dependencies {
+
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
+
+    // RxJava
+    implementation (libs.rxjava)
+    implementation(libs.rxandroid)
+    implementation(libs.androidx.runtime.rxjava3)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+
+    // Jackson
+    implementation(libs.jackson.databind)
+
+    // Resteasy
+    implementation(libs.resteasy.client)
+
+    // SmallRye Config
+    //implementation("org.eclipse.microprofile.config:microprofile-config-api:3.1") // for application.properties config loader
+    implementation(libs.smallrye.config)
+
+}
+----
+
+====
+
+* Die Java und Kotlin Versionen wurden auf 17 bzw. 1.5.13 erhöht
+* RxJava: reaktives Programmieren fürs Android
+* Hilt bzw. KSP: Dependency Injection
+* Jackson und Resteasy: für REST
+* Smallrye Config: wird für application.properties benötigt
+
+bei libs.versions.toml werden die Versionen und Konfigurationen hinzugefügt
+
+
+=== Starten der Applikation
+
+* Die Applikation beginnt bei TodoApplication
+
+[source, java]
+----
+package at.htl.todo;
+
+import android.app.Application;
+import android.util.Log;
+
+import javax.inject.Singleton;
+import dagger.hilt.android.HiltAndroidApp;
+
+@HiltAndroidApp // <.>
+@Singleton
+public class TodoApplication extends Application {
+    static final String TAG = TodoApplication.class.getSimpleName();
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Log.i(TAG, "App started"); // <.>
+    }
+}
+----
+<.> Dependency Injection von Hilt
+<.> dient zum Loggen, ob die App wirklich hier gestartet worden ist
+
+IMPORTANT: Vor dem ersten Start muss die Zeile `android:name=".TodoApplication"` in AndroidManifest.xml hinzugefügt werden
+
+=== Anzeigen in Android
+
+* Name der MainActivity geändert
+* MainView.kt in layout verschoben
+
+[source, kotlin]
+----
+package at.htl.todo.ui.layout
+
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.tooling.preview.Preview
+import at.htl.todo.ui.theme.TodoTheme
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton // <.>
+class MainView {
+
+    @Inject // <.>
+    constructor(){}
+
+    fun buildContent(activity: ComponentActivity) { // <.>
+        activity.enableEdgeToEdge()
+        activity.setContent {
+            TodoTheme {
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    Greeting(
+                        name = "Android",
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun Greeting(name: String, modifier: Modifier = Modifier) {
+    Text(
+        text = "Hello $name!",
+        modifier = modifier
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    TodoTheme {
+        Greeting("Android")
+    }
+}
+----
+
+<.> In Android die Dependency Injection
+<.> Constructor Injection
+<.> eine Methode, die  den Content für Android baut -> wird dann in der MainActivity aufgerufen
+
+NOTE: In der AndroidManifest.xml in <activity></activity> die `android:name=".MainActivity"` hinzufügen
+
+=== Util
+
+Begrifflichkeiten bzw. was ist der Zweck dieser Util:
+
+* Immer: https://immerjs.github.io/immer/[Immer]
+* Mapper:
+** Marshalling/Unmarshalling von Java-Objekten
+** Deep-Clones
+* resteasy: für REST
+* Store:
+** BehaviorSubject: speichert immer aktuellsten Wert, der dann an die Subscriber übermittelt
+** Immer
+* Config-Dateien: für Smallrye
+
+=== application.properties
+
+* neuer Ordner `assets` erstellen
+* application.properties erstellen
+
+.application.properties
+[source, properties]
+----
+json.placeholder.baseurl=https://jsonplaceholder.typicode.com
+----
+Mit der URL holen wir die Beispielsdaten mittels REST her
+
+=== Store und Model
+
+* Prinzip mit Single Source of Truth -> beim Model werden die Daten hier verwaltet
+
+.Klasse Todo
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/model/Todo.java[]
+----
+
+.Klasse Model
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/model/Model.java[]
+----
+
+.Klasse ModelStore
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/model/ModelStore.java[]
+----
+
+<.> Vererbung von Store mit Model.
+
+
+.Klasse Store
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/util/store/Store.java[]
+----
+
+=== Todo anzeigen
+
+.MainView.kt
+[%collapsible]
+====
+
+[source, kotlin]
+----
+include::todo/app/src/main/java/at/htl/todo/ui/layout/MainView.kt[]
+----
+
+====
+
+* Hier werden die Beispielsdaten in einer einfachen View gezeigt
+
+=== Daten mittels REST holen
+
+* Die Daten werden über diese Website https://jsonplaceholder.typicode.com geholt
+* REST-Client und Service erstellen
+
+.REST-Client
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/model/TodoClient.java[]
+----
+
+.Server
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/model/TodoService.java[]
+----
+
+.MainActivity.java
+[source, java]
+----
+include::todo/app/src/main/java/at/htl/todo/MainActivity.java[]
+----
+
+* Mit `todoService.getAll()` werden die Daten geholt
+
+IMPORTANT: in AndroidManifest.xml muss noch `<uses-permission android:name="android.permission.INTERNET"/>`
+hinzugefügt werden, sonst hat man keinen Zugriff aufs Internet mit Android
+
+
+.AndroidManifest.xml
+[%collapsible]
+====
+[source, xml]
+----
+include::todo/app/src/main/AndroidManifest.xml[]
+----
+====

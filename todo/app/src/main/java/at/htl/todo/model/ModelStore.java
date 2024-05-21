@@ -5,7 +5,7 @@ import javax.inject.Singleton;
 import at.htl.todo.util.store.Store;
 
 @Singleton
-public class ModelStore extends Store<Model>  {
+public class ModelStore extends Store<Model>  { // <.>
 
     @Inject
     ModelStore() {
