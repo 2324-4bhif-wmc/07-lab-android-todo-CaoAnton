@@ -4,6 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -25,6 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rxjava3.subscribeAsState
 import androidx.compose.ui.Alignment
@@ -58,7 +64,7 @@ class MainView @Inject constructor() {
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
             ) {
-                CenterBar()
+                CenterBar(viewModel)
                 Todos(model = viewModel, modifier = Modifier.padding(all = 32.dp))
             }
         }
@@ -67,36 +73,38 @@ class MainView @Inject constructor() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CenterBar() {
+fun CenterBar(model: Model) {
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                ),
                 title = {
-                    Text(
-                        "TODOS",
-                        maxLines = 3,
-                        overflow = TextOverflow.Clip
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = {}) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Something"
-                        )
-                    }
+                    Text("Small Top App Bar")
                 }
             )
         },
-        content = { innerPadding ->
-            LazyColumn(
-                contentPadding = innerPadding,
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-            }
-        })
+    ) { innerPadding ->
+        ScrollContent(innerPadding, model)
+    }
 }
 
+@Composable
+fun ScrollContent(paddingValues: PaddingValues, model: Model) {
+    val todos = model.todos
+    Column(
+        modifier = Modifier
+            .padding(paddingValues)
+            .verticalScroll(rememberScrollState())
+    ) {
+        // Add your scrollable content here
+        for (i in todos) {
+            Text("Item ${i.title}", modifier = Modifier.padding(8.dp))
+        }
+    }
+}
 
 @Composable
 fun Todos(model: Model, modifier: Modifier = Modifier) {
@@ -147,6 +155,20 @@ fun TodoPreview() {
 
     TodoTheme {
         Todos(model)
-        CenterBar()
+    }
+
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TodoPreviewBar() {
+
+    val model = Model()
+    val todo = Todo()
+    todo.id = 1
+    todo.title = "First Todo"
+    model.todos = arrayOf(todo)
+    TodoTheme {
+        CenterBar(model)
     }
 }
